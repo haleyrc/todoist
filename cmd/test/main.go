@@ -69,4 +69,16 @@ func main() {
 		log.Fatalln(err)
 	}
 	fmt.Printf("%#v\n", label)
+
+	newTask, err := c.AddTask(todoist.NewTask{
+		Content:   "This is a test",
+		Project:   "Personal",
+		Labels:    []string{"hosted"},
+		Priority:  3,
+		DueString: "tomorrow at 3PM",
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("%#v\n", newTask)
 }

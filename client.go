@@ -1,13 +1,23 @@
 package todoist
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pborman/uuid"
+)
+
+var (
+	ErrProjectNotFound = errors.New("project not found")
+	ErrLabelNotFound   = errors.New("label not found")
 )
 
 const TodoistUrl = "https://beta.todoist.com/API/v8/"
@@ -19,6 +29,9 @@ type QueryParam func(url.Values)
 type Client struct {
 	key    string
 	client *http.Client
+
+	projects []Project
+	labels   []Label
 }
 
 func NewClient(key string) Client {
@@ -28,6 +41,28 @@ func NewClient(key string) Client {
 			Timeout: DefaultTimeout,
 		},
 	}
+}
+
+func (c *Client) findLabelInCache(name string) (Label, bool) {
+	for _, p := range c.labels {
+		if p.Name == name {
+			return p, true
+		}
+	}
+	return Label{}, false
+}
+
+func (c *Client) FindLabel(name string) (Label, error) {
+	if l, found := c.findLabelInCache(name); found {
+		return l, nil
+	}
+	if _, err := c.AllLabels(); err != nil {
+		return Label{}, nil
+	}
+	if l, found := c.findLabelInCache(name); found {
+		return l, nil
+	}
+	return Label{}, ErrLabelNotFound
 }
 
 func (c *Client) GetLabel(id int64) (Label, error) {
@@ -57,6 +92,7 @@ func (c *Client) AllLabels() (Labels, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&labels); err != nil {
 		return nil, err
 	}
+	c.labels = labels
 
 	return labels, nil
 }
@@ -97,6 +133,67 @@ func (c *Client) GetTask(id int64) (Task, error) {
 	return task, nil
 }
 
+type NewTask struct {
+	Content   string
+	Project   string
+	Labels    []string
+	Priority  int
+	DueString string
+}
+
+func (c *Client) AddTask(nt NewTask) (Task, error) {
+	if nt.Priority > 4 || nt.Priority < 1 {
+		return Task{}, errors.New("invalid priority: must be between 1 and 4")
+	}
+
+	project, err := c.FindProject(nt.Project)
+	if err != nil {
+		return Task{}, err
+	}
+
+	// TODO (RCH): Parallelize this
+	labels := make([]int64, 0, len(nt.Labels))
+	for _, lbl := range nt.Labels {
+		label, err := c.FindLabel(lbl)
+		if err != nil {
+			return Task{}, err
+		}
+		labels = append(labels, label.ID)
+	}
+
+	type NewTaskRequest struct {
+		Content   string  `json:"content"`
+		Project   int64   `json:"project_id"`
+		Labels    []int64 `json:"label_ids"`
+		Priority  int     `json:"priority"`
+		DueString string  `json:"due_string"`
+	}
+	ntr := NewTaskRequest{
+		Content:   nt.Content,
+		Project:   project.ID,
+		Labels:    labels,
+		Priority:  nt.Priority,
+		DueString: nt.DueString,
+	}
+
+	var buff bytes.Buffer
+	if err := json.NewEncoder(&buff).Encode(&ntr); err != nil {
+		return Task{}, err
+	}
+	resp, err := c.post("tasks", &buff)
+	if err != nil {
+		return Task{}, err
+	}
+	defer resp.Body.Close()
+
+	var task Task
+	if err := json.NewDecoder(resp.Body).Decode(&task); err != nil {
+		return Task{}, err
+	}
+
+	return task, nil
+}
+
 func (c *Client) ActiveTasks(params ...QueryParam) (Tasks, error) {
 	resp, err := c.get("tasks", params...)
 	if err != nil {
@@ -112,6 +209,28 @@ func (c *Client) ActiveTasks(params ...QueryParam) (Tasks, error) {
 	return tasks, nil
 }
 
+func (c *Client) findProjectInCache(name string) (Project, bool) {
+	for _, p := range c.projects {
+		if p.Name == name {
+			return p, true
+		}
+	}
+	return Project{}, false
+}
+
+func (c *Client) FindProject(name string) (Project, error) {
+	if p, found := c.findProjectInCache(name); found {
+		return p, nil
+	}
+	if _, err := c.AllProjects(); err != nil {
+		return Project{}, nil
+	}
+	if p, found := c.findProjectInCache(name); found {
+		return p, nil
+	}
+	return Project{}, ErrProjectNotFound
+}
+
 func (c *Client) AllProjects() (Projects, error) {
 	resp, err := c.get("/projects")
 	if err != nil {
@@ -123,6 +242,7 @@ func (c *Client) AllProjects() (Projects, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
 		return nil, err
 	}
+	c.projects = projects
 
 	return projects, nil
 }
@@ -157,6 +277,20 @@ func (c *Client) get(path string, params ...QueryParam) (*http.Response, error) 
 		param(q)
 	}
 	req.URL.RawQuery = q.Encode()
+
+	return c.client.Do(req)
+}
+
+func (c *Client) post(path string, r io.Reader) (*http.Response, error) {
+	url := TodoistUrl + strings.TrimPrefix(path, "/")
+
+	req, err := http.NewRequest("POST", url, r)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.key)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Request-ID", uuid.New())
 
 	return c.client.Do(req)
 }
