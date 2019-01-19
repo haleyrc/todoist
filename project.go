@@ -1,9 +1,5 @@
 package todoist
 
-import (
-	"errors"
-)
-
 type Project struct {
 	CommentCount int64  `json:"comment_count"`
 	ID           int64  `json:"id"`
@@ -14,11 +10,11 @@ type Project struct {
 
 type Projects []Project
 
-func (ps Projects) FindName(n string) (Project, error) {
+func (ps Projects) FindName(n string) (Project, bool) {
 	for _, p := range ps {
 		if p.Name == n {
-			return p, nil
+			return p, true
 		}
 	}
-	return Project{}, errors.New("project not found")
+	return Project{}, false
 }

@@ -30,7 +30,8 @@ type Client struct {
 	key    string
 	client *http.Client
 
-	projects []Project
+	// TODO (RCH): Some way to signal to refresh cache is called for
+	projects Projects
 	labels   []Label
 }
 
@@ -142,38 +143,42 @@ type NewTask struct {
 }
 
 func (c *Client) AddTask(nt NewTask) (Task, error) {
-	if nt.Priority > 4 || nt.Priority < 1 {
-		return Task{}, errors.New("invalid priority: must be between 1 and 4")
-	}
-
-	project, err := c.FindProject(nt.Project)
-	if err != nil {
-		return Task{}, err
-	}
-
-	// TODO (RCH): Parallelize this
-	labels := make([]int64, 0, len(nt.Labels))
-	for _, lbl := range nt.Labels {
-		label, err := c.FindLabel(lbl)
-		if err != nil {
-			return Task{}, err
-		}
-		labels = append(labels, label.ID)
-	}
-
 	type NewTaskRequest struct {
 		Content   string  `json:"content"`
-		Project   int64   `json:"project_id"`
-		Labels    []int64 `json:"label_ids"`
+		Project   int64   `json:"project_id,omitempty"`
+		Labels    []int64 `json:"label_ids,omitempty"`
 		Priority  int     `json:"priority"`
-		DueString string  `json:"due_string"`
+		DueString string  `json:"due_string,omitempty"`
 	}
 	ntr := NewTaskRequest{
 		Content:   nt.Content,
-		Project:   project.ID,
-		Labels:    labels,
-		Priority:  nt.Priority,
 		DueString: nt.DueString,
+		Priority:  1,
+	}
+
+	if nt.Priority <= 4 && nt.Priority >= 1 {
+		ntr.Priority = nt.Priority
+	}
+
+	if nt.Project != "" {
+		project, err := c.FindProject(nt.Project)
+		if err != nil {
+			return Task{}, err
+		}
+		ntr.Project = project.ID
+	}
+
+	if nt.Labels != nil && len(nt.Labels) > 0 {
+		// TODO (RCH): Parallelize this
+		labels := make([]int64, 0, len(nt.Labels))
+		for _, lbl := range nt.Labels {
+			label, err := c.FindLabel(lbl)
+			if err != nil {
+				return Task{}, err
+			}
+			labels = append(labels, label.ID)
+		}
+		ntr.Labels = labels
 	}
 
 	var buff bytes.Buffer
@@ -210,12 +215,7 @@ func (c *Client) ActiveTasks(params ...QueryParam) (Tasks, error) {
 }
 
 func (c *Client) findProjectInCache(name string) (Project, bool) {
-	for _, p := range c.projects {
-		if p.Name == name {
-			return p, true
-		}
-	}
-	return Project{}, false
+	return c.projects.FindName(name)
 }
 
 func (c *Client) FindProject(name string) (Project, error) {

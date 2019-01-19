@@ -16,9 +16,9 @@ func main() {
 	}
 	fmt.Printf("%d\n", len(projects))
 
-	p, err := projects.FindName("Work")
-	if err != nil {
-		log.Fatalln(err)
+	p, ok := projects.FindName("Work")
+	if !ok {
+		log.Fatalln("project not found")
 	}
 	fmt.Printf("%#v\n", p)
 
@@ -81,4 +81,13 @@ func main() {
 		log.Fatalln(err)
 	}
 	fmt.Printf("%#v\n", newTask)
+
+	thinTask, err := c.AddTask(todoist.NewTask{
+		Content:  "This is a test",
+		Priority: 1,
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("%#v\n", thinTask)
 }
