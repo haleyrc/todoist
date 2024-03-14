@@ -1,15 +1,9 @@
 package todoist
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
-	"os"
-
-	"github.com/haleyrc/uuid"
 )
 
 const (
@@ -64,33 +58,16 @@ type ProjectParams struct {
 }
 
 func (c *Client) CreateProject(ctx context.Context, params ProjectParams) (*Project, error) {
-	url := baseURL + "/projects"
-
-	jsonBytes, err := json.Marshal(params)
+	req, err := c.post("/projects", params)
 	if err != nil {
 		return nil, fmt.Errorf("client: create project: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonBytes))
-	if err != nil {
-		return nil, fmt.Errorf("client: create project: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return nil, fmt.Errorf("client: create project: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("client: create project: %w", responseError(resp))
@@ -105,27 +82,16 @@ func (c *Client) CreateProject(ctx context.Context, params ProjectParams) (*Proj
 }
 
 func (c *Client) DeleteProject(ctx context.Context, id string) error {
-	url := baseURL + fmt.Sprintf("/projects/%s", id)
-
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req, err := c.delete(fmt.Sprintf("/projects/%s", id))
 	if err != nil {
 		return fmt.Errorf("client: delete project: %w", err)
 	}
 
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return fmt.Errorf("client: delete project: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("client: delete project: %w", responseError(resp))
@@ -135,27 +101,16 @@ func (c *Client) DeleteProject(ctx context.Context, id string) error {
 }
 
 func (c *Client) GetProject(ctx context.Context, projectID string) (*Project, error) {
-	url := baseURL + fmt.Sprintf("/projects/%s", projectID)
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := c.get(fmt.Sprintf("/projects/%s", projectID))
 	if err != nil {
 		return nil, fmt.Errorf("client: get project: %w", err)
 	}
 
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return nil, fmt.Errorf("client: get project: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("client: get project: %w", responseError(resp))
@@ -170,27 +125,16 @@ func (c *Client) GetProject(ctx context.Context, projectID string) (*Project, er
 }
 
 func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
-	url := baseURL + "/projects"
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := c.get("/projects")
 	if err != nil {
 		return nil, fmt.Errorf("client: get projects: %w", err)
 	}
 
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return nil, fmt.Errorf("client: get projects: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("client: get projects: %w", responseError(resp))

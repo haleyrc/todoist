@@ -1,15 +1,9 @@
 package todoist
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
-	"os"
-
-	"github.com/haleyrc/uuid"
 )
 
 type Duration struct {
@@ -65,27 +59,16 @@ type TaskParams struct {
 }
 
 func (c *Client) CloseTask(ctx context.Context, id string) error {
-	url := baseURL + fmt.Sprintf("/tasks/%s/close", id)
-
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := c.post(fmt.Sprintf("/tasks/%s/close", id), nil)
 	if err != nil {
 		return fmt.Errorf("client: close task: %w", err)
 	}
 
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return fmt.Errorf("client: close task: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("client: close task: %w", responseError(resp))
@@ -95,33 +78,16 @@ func (c *Client) CloseTask(ctx context.Context, id string) error {
 }
 
 func (c *Client) CreateTask(ctx context.Context, params TaskParams) (*Task, error) {
-	url := baseURL + "/tasks"
-
-	jsonBytes, err := json.Marshal(params)
+	req, err := c.post("/tasks", params)
 	if err != nil {
 		return nil, fmt.Errorf("client: create task: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonBytes))
-	if err != nil {
-		return nil, fmt.Errorf("client: create task: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return nil, fmt.Errorf("client: create task: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("client: create task: %w", responseError(resp))
@@ -136,27 +102,16 @@ func (c *Client) CreateTask(ctx context.Context, params TaskParams) (*Task, erro
 }
 
 func (c *Client) DeleteTask(ctx context.Context, id string) error {
-	url := baseURL + fmt.Sprintf("/tasks/%s", id)
-
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req, err := c.delete(fmt.Sprintf("/tasks/%s", id))
 	if err != nil {
 		return fmt.Errorf("client: delete task: %w", err)
 	}
 
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return fmt.Errorf("client: delete task: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("client: delete task: %w", responseError(resp))
@@ -166,28 +121,16 @@ func (c *Client) DeleteTask(ctx context.Context, id string) error {
 }
 
 func (c *Client) ReopenTask(ctx context.Context, id string) error {
-	url := baseURL + fmt.Sprintf("/tasks/%s/reopen", id)
-
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := c.post(fmt.Sprintf("/tasks/%s/reopen", id), nil)
 	if err != nil {
 		return fmt.Errorf("client: reopen task: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-Id", uuid.NewString())
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIToken))
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return fmt.Errorf("client: reopen task: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if c.Verbose {
-		if b, err := httputil.DumpResponse(resp, true); err == nil {
-			fmt.Fprintln(os.Stderr, string(b))
-		}
-	}
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("client: reopen task: %w", responseError(resp))
