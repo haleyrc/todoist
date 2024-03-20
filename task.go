@@ -62,17 +62,17 @@ type TaskParams struct {
 func (c *Client) CloseTask(ctx context.Context, id string) error {
 	req, err := c.post(fmt.Sprintf("/tasks/%s/close", id), nil)
 	if err != nil {
-		return fmt.Errorf("client: close task: %w", err)
+		return fmt.Errorf("todoist: close task: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return fmt.Errorf("client: close task: %w", err)
+		return fmt.Errorf("todoist: close task: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("client: close task: %w", responseError(resp))
+		return fmt.Errorf("todoist: close task: %w", responseError(resp))
 	}
 
 	return nil
@@ -81,22 +81,22 @@ func (c *Client) CloseTask(ctx context.Context, id string) error {
 func (c *Client) CreateTask(ctx context.Context, params TaskParams) (*Task, error) {
 	req, err := c.post("/tasks", params)
 	if err != nil {
-		return nil, fmt.Errorf("client: create task: %w", err)
+		return nil, fmt.Errorf("todoist: create task: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return nil, fmt.Errorf("client: create task: %w", err)
+		return nil, fmt.Errorf("todoist: create task: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("client: create task: %w", responseError(resp))
+		return nil, fmt.Errorf("todoist: create task: %w", responseError(resp))
 	}
 
 	var task Task
 	if err := unmarshal(resp.Body, &task); err != nil {
-		return nil, fmt.Errorf("client: create task: %w", err)
+		return nil, fmt.Errorf("todoist: create task: %w", err)
 	}
 
 	return &task, nil
@@ -105,17 +105,17 @@ func (c *Client) CreateTask(ctx context.Context, params TaskParams) (*Task, erro
 func (c *Client) DeleteTask(ctx context.Context, id string) error {
 	req, err := c.delete(fmt.Sprintf("/tasks/%s", id))
 	if err != nil {
-		return fmt.Errorf("client: delete task: %w", err)
+		return fmt.Errorf("todoist: delete task: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return fmt.Errorf("client: delete task: %w", err)
+		return fmt.Errorf("todoist: delete task: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("client: delete task: %w", responseError(resp))
+		return fmt.Errorf("todoist: delete task: %w", responseError(resp))
 	}
 
 	return nil
@@ -128,7 +128,7 @@ type TaskFilter struct {
 func (c *Client) GetTasks(ctx context.Context, filter *TaskFilter) ([]Task, error) {
 	req, err := c.get("/tasks")
 	if err != nil {
-		return nil, fmt.Errorf("client: get tasks: %w", err)
+		return nil, fmt.Errorf("todoist: get tasks: %w", err)
 	}
 
 	if filter != nil {
@@ -137,17 +137,17 @@ func (c *Client) GetTasks(ctx context.Context, filter *TaskFilter) ([]Task, erro
 
 	resp, err := c.do(req)
 	if err != nil {
-		return nil, fmt.Errorf("client: get tasks: %w", err)
+		return nil, fmt.Errorf("todoist: get tasks: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("client: get tasks: %w", responseError(resp))
+		return nil, fmt.Errorf("todoist: get tasks: %w", responseError(resp))
 	}
 
 	var tasks []Task
 	if err := unmarshal(resp.Body, &tasks); err != nil {
-		return nil, fmt.Errorf("client: get tasks: %w", err)
+		return nil, fmt.Errorf("todoist: get tasks: %w", err)
 	}
 
 	return tasks, nil
@@ -156,17 +156,17 @@ func (c *Client) GetTasks(ctx context.Context, filter *TaskFilter) ([]Task, erro
 func (c *Client) ReopenTask(ctx context.Context, id string) error {
 	req, err := c.post(fmt.Sprintf("/tasks/%s/reopen", id), nil)
 	if err != nil {
-		return fmt.Errorf("client: reopen task: %w", err)
+		return fmt.Errorf("todoist: reopen task: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return fmt.Errorf("client: reopen task: %w", err)
+		return fmt.Errorf("todoist: reopen task: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("client: reopen task: %w", responseError(resp))
+		return fmt.Errorf("todoist: reopen task: %w", responseError(resp))
 	}
 
 	return nil

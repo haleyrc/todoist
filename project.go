@@ -60,22 +60,22 @@ type ProjectParams struct {
 func (c *Client) CreateProject(ctx context.Context, params ProjectParams) (*Project, error) {
 	req, err := c.post("/projects", params)
 	if err != nil {
-		return nil, fmt.Errorf("client: create project: %w", err)
+		return nil, fmt.Errorf("todoist: create project: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return nil, fmt.Errorf("client: create project: %w", err)
+		return nil, fmt.Errorf("todoist: create project: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("client: create project: %w", responseError(resp))
+		return nil, fmt.Errorf("todoist: create project: %w", responseError(resp))
 	}
 
 	var project Project
 	if err := unmarshal(resp.Body, &project); err != nil {
-		return nil, fmt.Errorf("client: create project: %w", err)
+		return nil, fmt.Errorf("todoist: create project: %w", err)
 	}
 
 	return &project, nil
@@ -84,17 +84,17 @@ func (c *Client) CreateProject(ctx context.Context, params ProjectParams) (*Proj
 func (c *Client) DeleteProject(ctx context.Context, id string) error {
 	req, err := c.delete(fmt.Sprintf("/projects/%s", id))
 	if err != nil {
-		return fmt.Errorf("client: delete project: %w", err)
+		return fmt.Errorf("todoist: delete project: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return fmt.Errorf("client: delete project: %w", err)
+		return fmt.Errorf("todoist: delete project: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("client: delete project: %w", responseError(resp))
+		return fmt.Errorf("todoist: delete project: %w", responseError(resp))
 	}
 
 	return nil
@@ -103,22 +103,22 @@ func (c *Client) DeleteProject(ctx context.Context, id string) error {
 func (c *Client) GetProject(ctx context.Context, projectID string) (*Project, error) {
 	req, err := c.get(fmt.Sprintf("/projects/%s", projectID))
 	if err != nil {
-		return nil, fmt.Errorf("client: get project: %w", err)
+		return nil, fmt.Errorf("todoist: get project: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return nil, fmt.Errorf("client: get project: %w", err)
+		return nil, fmt.Errorf("todoist: get project: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("client: get project: %w", responseError(resp))
+		return nil, fmt.Errorf("todoist: get project: %w", responseError(resp))
 	}
 
 	var project Project
 	if err := unmarshal(resp.Body, &project); err != nil {
-		return nil, fmt.Errorf("client: get project: %w", err)
+		return nil, fmt.Errorf("todoist: get project: %w", err)
 	}
 
 	return &project, nil
@@ -127,22 +127,22 @@ func (c *Client) GetProject(ctx context.Context, projectID string) (*Project, er
 func (c *Client) GetProjects(ctx context.Context) ([]Project, error) {
 	req, err := c.get("/projects")
 	if err != nil {
-		return nil, fmt.Errorf("client: get projects: %w", err)
+		return nil, fmt.Errorf("todoist: get projects: %w", err)
 	}
 
 	resp, err := c.do(req)
 	if err != nil {
-		return nil, fmt.Errorf("client: get projects: %w", err)
+		return nil, fmt.Errorf("todoist: get projects: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("client: get projects: %w", responseError(resp))
+		return nil, fmt.Errorf("todoist: get projects: %w", responseError(resp))
 	}
 
 	var projects []Project
 	if err := unmarshal(resp.Body, &projects); err != nil {
-		return nil, fmt.Errorf("client: get projects: %w", err)
+		return nil, fmt.Errorf("todoist: get projects: %w", err)
 	}
 
 	return projects, nil
