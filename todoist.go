@@ -23,7 +23,7 @@ type Client struct {
 
 func NewClient(apiToken string) (*Client, error) {
 	if apiToken == "" {
-		return nil, fmt.Errorf("new client: api token is requried")
+		return nil, fmt.Errorf("new client: api token is required")
 	}
 
 	c := &Client{
