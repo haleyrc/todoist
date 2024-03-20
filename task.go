@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 type Duration struct {
@@ -118,6 +119,38 @@ func (c *Client) DeleteTask(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+type TaskFilter struct {
+	Filter string
+}
+
+func (c *Client) GetTasks(ctx context.Context, filter *TaskFilter) ([]Task, error) {
+	req, err := c.get("/tasks")
+	if err != nil {
+		return nil, fmt.Errorf("client: get tasks: %w", err)
+	}
+
+	if filter != nil {
+		req.URL.RawQuery = url.Values{"filter": []string{filter.Filter}}.Encode()
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, fmt.Errorf("client: get tasks: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("client: get tasks: %w", responseError(resp))
+	}
+
+	var tasks []Task
+	if err := unmarshal(resp.Body, &tasks); err != nil {
+		return nil, fmt.Errorf("client: get tasks: %w", err)
+	}
+
+	return tasks, nil
 }
 
 func (c *Client) ReopenTask(ctx context.Context, id string) error {
